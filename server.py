@@ -16,6 +16,25 @@ Content-length: 18
 
 <h1>Hello Yuz!</h1>""".replace(b'\n', b'\r\n')
 
+# bad request 响应结果
+BAD_REQUEST_RESPONSE = b"""\
+HTTP/1.1 400 Bad Request
+Content-type: text/plain
+Content-length: 11
+
+Bad Request""".replace(b"\n", b"\r\n")
+
+# not foound 响应结果
+NOT_FOUND_RESPONSE = b"""\
+HTTP/1.1 404 Not Found
+Content-type: text/plain
+Content-length: 9
+
+Not Found""".replace(b"\n", b"\r\n")
+
+
+class BadRequestException(Exception):
+    pass
 
 
 class Request(typing.NamedTuple):
@@ -30,7 +49,7 @@ class Request(typing.NamedTuple):
         try:
             request_line = next(lines).decode()
         except StopIteration:
-            raise ValueError('no request line')
+            raise BadRequestException('no request line')
 
         method, path, _ = request_line.split(' ')
 
@@ -59,13 +78,17 @@ def iter_request_lines(sock: socket.socket, buff_size=1024):
 
 
 with socket.socket() as sock:
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((HOST, PORT))
     # 0怎么确定的? 学习 socket 协议簇
     sock.listen(0)
     print(f"listen on {HOST}:{PORT}")
     while True:
         conn, address = sock.accept()
-        request = Request.from_socket(conn)
         print(f"new connection from {address}")
-        print(f"请求数据:{request}")
-        conn.sendall(RESPONSE)
+        try:
+            request = Request.from_socket(conn)
+            print(f"请求数据:{request}")
+            conn.sendall(NOT_FOUND_RESPONSE)
+        except BadRequestException:
+            conn.sendall(BAD_REQUEST_RESPONSE)
