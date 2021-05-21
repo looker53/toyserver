@@ -4,9 +4,28 @@
 # Phone&Wechat: 18173179913
 # -----------------------------------------------
 import socket
+import typing
 
 HOST = '127.0.0.1'
 PORT = 9000
+
+
+def iter_request_lines(sock: socket.socket, buff_size=1024):
+    """获取请求的每行数据"""
+    buff: bytes = b''
+    while True:
+        data = sock.recv(buff_size)
+        if not data:
+            return b''
+
+        buff += data
+        while True:
+            try:
+                line, buff = buff.split(b'\r\n', maxsplit=1)
+                yield line
+            except ValueError:
+                return buff
+
 
 # 每行用 \r\n 分割，content-length 长度确认
 RESPONSE = b"""\
@@ -25,4 +44,6 @@ with socket.socket() as sock:
         conn, address = sock.accept()
         print(f"new connection from {address}")
         with conn:
+            for line in iter_request_lines(conn):
+                print(line)
             conn.sendall(RESPONSE)
