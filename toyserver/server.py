@@ -114,3 +114,11 @@ class HTTPServer:
 
     def add_router(self, url, handler):
         self.routers.append((url, handler))
+
+    def route(self, url):
+        """路由装饰器"""
+        def add(handler):
+            self.add_router(url, handler)
+            return handler
+        return add
+
