@@ -58,7 +58,8 @@ class Response:
             self.body = BytesIO()
 
         self.headers = headers or {}
-        self.status = status.encode() or b'200 OK'
+        status = status or '200 OK'
+        self.status = status.encode()
 
     def send(self, sock: socket.socket):
         content_length = self.headers.get('content-length')

@@ -32,6 +32,7 @@ class Request(typing.NamedTuple):
     method: str
     headers: typing.Mapping
     body: Body
+    args: str
 
     @classmethod
     def from_socket(cls, sock: socket.socket) -> 'Request':
@@ -42,6 +43,7 @@ class Request(typing.NamedTuple):
             raise BadRequestException('no request line')
 
         method, path, _ = request_line.split(' ')
+        path, _, args = path.partition('?')
         headers = {}
         while True:
             try:
@@ -55,7 +57,7 @@ class Request(typing.NamedTuple):
             headers[key.lower()] = value.lstrip()
 
         body = Body(sock, buff=buff)
-        return cls(path=path, method=method, headers=headers, body=body)
+        return cls(path=path, method=method, headers=headers, body=body, args=args)
 
 
 def iter_request_lines(sock: socket.socket, buff_size=1024):
