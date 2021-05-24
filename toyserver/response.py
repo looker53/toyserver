@@ -10,34 +10,32 @@ import typing
 import os
 from io import BytesIO
 
-STATIC_PATH = pathlib.Path(__file__).parent.parent / 'static'
+from toyserver.request import Request
 
 
-def send_file(sock: socket.socket, path: str) -> None:
-    """发送静态文件给客户端"""
-    if path == '/':
-        path = '/index.html'
+def send_static_file(static_folder: str):
+    def static_router(request: Request) -> Response:
+        """发送静态文件给客户端"""
+        _, _, static_url_without_prefix = request.path.lstrip('/').partition('/')
+        static_file_path = pathlib.Path(static_folder) / static_url_without_prefix.lstrip('/')
+        file_path = static_file_path.resolve()
+        try:
+            if not file_path.exists():
+                return Response('page missing', status='404 Not Found')
+        except OSError:
+            return Response('page missing', status='404 Not Found')
 
-    relative_file_path = pathlib.Path(STATIC_PATH) / path.lstrip('/')
-    file_path = relative_file_path.resolve()
-    try:
-        if not file_path.exists():
-            response = Response('page missing', status='404 Not Found')
-            return response.send(sock)
-    except OSError:
-        response = Response('page missing', status='404 Not Found')
-        return response.send(sock)
+        content_type, encoding = mimetypes.guess_type(file_path)
+        if content_type is None:
+            content_type = 'application/octet-stream'
+        if encoding is not None:
+            content_type += f'; charset={encoding}'
 
-    content_type, encoding = mimetypes.guess_type(file_path)
-    if content_type is None:
-        content_type = 'application/octet-stream'
-    if encoding is not None:
-        content_type += f'; charset={encoding}'
-
-    with file_path.open('rb', encoding=encoding) as f:
+        f = file_path.open('rb', encoding=encoding)
         response = Response(body=f, status='200 OK')
         response.headers['content-type'] = content_type
-        return response.send(sock)
+        return response
+    return static_router
 
 
 class Response:

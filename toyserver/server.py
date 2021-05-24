@@ -8,8 +8,11 @@ from queue import Queue, Empty
 from threading import Thread
 
 from .request import Request
-from .response import send_file, Response
-from .exceptions import BadRequestException
+from .response import Response, send_static_file
+
+
+STATIC_URL = '/static'
+STATIC_FOLDER = 'static'
 
 
 class HTTPWorker(Thread):
@@ -49,11 +52,16 @@ class HTTPWorker(Thread):
                 return
 
             for url, handler in self.routers:
-                if request.path == url:
+                if request.path == '/' == url:
+                    response = handler(request)
+                    response.send(client_sock)
+                    return
+
+                if request.path.startswith(url):
                     try:
                         response = handler(request)
                         response.send(client_sock)
-                    except Exception:
+                    except Exception as e:
                         response = Response('Server Error', status='500 Internal Server Error')
                         response.send(client_sock)
                     finally:
@@ -62,15 +70,6 @@ class HTTPWorker(Thread):
                 response = Response('Page not found', status='404 Not Found')
                 response.send(client_sock)
                 return
-            # # TODO: static file router
-            # try:
-            #     # content-length may be not an int string
-            #     content_length = int(request.headers.get('content-length', '0'))
-            # except ValueError:
-            #     content_length = 0
-            #
-            # body = request.body.read(content_length)
-            # send_file(client_sock, request.path)
 
 
 class HTTPServer:
@@ -86,6 +85,10 @@ class HTTPServer:
         self.worker_backlog = self.worker_count * 8
         self.connection_queue = Queue(maxsize=self.worker_backlog)
         self.routers = []
+        # self.static_folder = 'static'
+        # self.static_url = 'static'
+
+        self.add_router(STATIC_URL, send_static_file(STATIC_FOLDER))
 
     def listen(self):
         workers = []
