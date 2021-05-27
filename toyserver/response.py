@@ -58,6 +58,7 @@ class Response:
         self.headers = headers or {}
         status = status or '200 OK'
         self.status = status.encode()
+        self.encoding = encoding
 
     def send(self, sock: socket.socket):
         content_length = self.headers.get('content-length')
@@ -70,6 +71,9 @@ class Response:
                 content_length = self.body.tell()
                 self.body.seek(0, os.SEEK_SET)
             self.headers.setdefault('content-length', content_length)
+            content_type = self.headers.get('content-type', 'text/html')
+            content_type += f';charset={self.encoding}'
+            self.headers['content-type'] = content_type
 
         request_line = b'HTTP/1.1 ' + self.status + b'\r\n'
         for header_name, header_value in self.headers.items():

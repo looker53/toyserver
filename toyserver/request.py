@@ -57,7 +57,7 @@ class Request(typing.NamedTuple):
             headers[key.lower()] = value.lstrip()
 
         body = Body(sock, buff=buff)
-        return cls(path=path, method=method, headers=headers, body=body, args=args)
+        return cls(path=path, method=method.lower(), headers=headers, body=body, args=args)
 
 
 def iter_request_lines(sock: socket.socket, buff_size=1024):

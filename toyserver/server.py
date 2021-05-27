@@ -88,7 +88,7 @@ class HTTPServer:
         # self.static_folder = 'static'
         # self.static_url = 'static'
 
-        self.add_router(STATIC_URL, send_static_file(STATIC_FOLDER))
+        self.mount(STATIC_URL, send_static_file(STATIC_FOLDER))
 
     def listen(self):
         workers = []
@@ -112,13 +112,13 @@ class HTTPServer:
         [worker.stop() for worker in workers]
         [worker.join(timeout=30) for worker in workers]
 
-    def add_router(self, url, handler):
+    def mount(self, url, handler):
         self.routers.append((url, handler))
 
     def route(self, url):
         """路由装饰器"""
         def add(handler):
-            self.add_router(url, handler)
+            self.mount(url, handler)
             return handler
         return add
 
