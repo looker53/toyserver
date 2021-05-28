@@ -7,6 +7,7 @@ import socket
 import pathlib
 import mimetypes
 import typing
+import json
 import os
 from io import BytesIO
 
@@ -84,3 +85,22 @@ class Response:
         if content_length > 0:
             sock.sendfile(self.body)
         print(f'<-- {self.status}')
+
+
+class JsonResponse(Response):
+    def __init__(
+            self,
+            content,
+            body=None,
+            headers: typing.Mapping[str, str] = None,
+            status: str = None,
+            encoding='utf-8'
+    ):
+        content = json.dumps(content)
+        super().__init__(content,
+                         body,
+                         headers,
+                         status,
+                         encoding)
+        self.headers['content-type'] = 'application/json'
+

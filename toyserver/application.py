@@ -40,7 +40,7 @@ class Router:
 
         route_re = re.compile(f'^{url_pattern}$')
         name = name or view_func.__name__
-        methods = methods or 'get'
+        methods = methods or ['GET']
         url_map = URLMap(url=route_re, view_func=view_func, methods=methods)
         self.url_map[name] = url_map
 
@@ -48,7 +48,7 @@ class Router:
         for url_map in self.url_map.values():
             match = url_map.url.match(url)
             if match is None or method not in url_map.methods:
-                return
+                continue
             params = match.groupdict()
             return partial(url_map.view_func, **params)
 
