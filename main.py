@@ -26,7 +26,7 @@ def login(request):
 
 @app.route('/user/<id>', methods=['POST'])
 def user(request, id):
-    print(request.body)
+    print(request.json)
     return Response('User Page')
 
 print(app.router)

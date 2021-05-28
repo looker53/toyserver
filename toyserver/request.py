@@ -3,6 +3,7 @@
 # Email: wagyu2016@163.com
 # Phone&Wechat: 18173179913
 # -----------------------------------------------
+import json
 import socket
 import typing
 from .exceptions import BadRequestException
@@ -20,7 +21,6 @@ class Body:
             data = self._sock.recv(self._buff_size)
             if not data:
                 break
-
             self._buff += data
         res, self._buff = self._buff[:n], self._buff[n:]
         return res
@@ -33,6 +33,15 @@ class Request(typing.NamedTuple):
     headers: typing.Mapping
     body: Body
     args: str
+
+    @property
+    def json(self):
+        content = self.body._buff.decode('utf-8')
+        # content = self.body.read(1024).decode('utf-8')
+        try:
+            return json.loads(content)
+        except:
+            raise ValueError("no json data")
 
     @classmethod
     def from_socket(cls, sock: socket.socket) -> 'Request':
@@ -70,8 +79,17 @@ def iter_request_lines(sock: socket.socket, buff_size=1024):
 
         buff += data
         while True:
+            # try:
+            #     line, buff = buff.split(b'\r\n', maxsplit=1)
+            #     yield line
+            # except ValueError:
+            #     return buff
             try:
-                line, buff = buff.split(b'\r\n', maxsplit=1)
+                i = buff.index(b"\r\n")
+                line, buff = buff[:i], buff[i + 2:]
+                if not line:
+                    return buff
+
                 yield line
-            except ValueError:
-                return buff
+            except IndexError:
+                break
